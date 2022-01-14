@@ -1,5 +1,4 @@
 import paramiko
-import socket
 import platform
 import argparse
 import getpass
@@ -10,15 +9,12 @@ from os import system
 
 def main():
 
-    print(getpass.getuser())
     if getpass.getuser() != "root":
         print("Please run script as root!!")
         exit()
 
-    dns = socket.gethostbyname("banjo.rit.edu")
-    print(f"\nconnecting to {dns} (banjo.rit.edu)")
-
     my_parser = argparse.ArgumentParser()
+    
     my_parser.add_argument(
         "-u",
         "--username",
@@ -27,6 +23,7 @@ def main():
         type=str,
         required=True,
     )
+
     my_parser.add_argument(
         "-t",
         "--target",
@@ -35,14 +32,22 @@ def main():
         type=str,
         required=True,
     )
+
     my_parser.add_argument(
         "--bingus", dest="bingus", help="go bingus mode", action="store_true"
     )
+
     my_parser.set_defaults(bingus=False)
+    
     my_parser.add_argument(
         "--sigma", dest="sigma", help="become a sigma", action="store_true"
     )
+    
     my_parser.set_defaults(sigma=False)
+    
+    my_parser.add_argument('--pasta', dest='pasta', help='pasta mode information', action='store_true')
+    
+    my_parser.set_defaults(pasta=False)
 
     args = my_parser.parse_args()
 
@@ -58,16 +63,27 @@ def main():
             system("shutdown now")
         else: # Windows
             system("shutdown /s")
+    
+    print()
 
-    print("creating paramiko ssh client.")
+    if args.pasta:
+        print("[+] going pasta mode B)")
+
+    print("[+] creating paramiko ssh client.")
     ssh = paramiko.SSHClient()
     ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        print(f"attempting ssh connection to query {args.target}")
-        ssh.connect(dns.strip(), username=args.username, password=getpass.getpass())
+        print(f"[+] attempting ssh connection to query {args.target}\n")
+        ssh.connect('banjo.rit.edu', username=args.username, password=getpass.getpass())
+        print()
         ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(
             f"id {args.target}", get_pty=True
         )
+        if args.pasta:
+            stdin, stdout, stderr = ssh.exec_command(f'finger {args.target}', get_pty=True)
+            print(stdout.read().decode())
+
     except paramiko.SSHException as e:
         print(e)
         exit()
